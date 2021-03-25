@@ -1,0 +1,93 @@
+<CardValue>:
+    orientation: "horizontal"
+    spacing: 10
+    size_hint: (1., 0.2)
+    Label:
+        font_size: "{}px".format(root.font_size)
+        valign: "center"
+        text_size: (None, root.height)
+        text: root.value
+    Label:
+        font_size: "{}px".format(root.font_size // 1.5)
+        valign: "center"
+        size_hint: (None, 1.)
+        width: 20
+        text: root.units
+
+
+<PlayerCard>:
+
+    img: img
+
+    canvas.before:
+        Color:
+            rgba: 0.2, 0.2, 0.2, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    padding: 10
+    spacing: 10
+    size_hint: (None, None)
+    size: (400, 250)
+    orientation: "vertical"
+
+    Label:
+        font_size: "20px"
+        size_hint: None, None
+        size: self.texture_size
+        text: root.name
+
+    BoxLayout:
+        size_hint: (1.0, 1.0)
+        spacing: 10
+        orientation: "horizontal"
+
+        Image:
+            id: img
+            width: 200
+            source: root.avatar_src or "assets/avatar.png"
+
+        BoxLayout:
+            size_hint: (1.0, 1.0)
+            spacing: 10
+            orientation: "vertical"
+
+            CardValue
+                font_size: 50
+                size_hint: (1., 0.4)
+                value: root.power
+                units: "W"
+            CardValue
+                value: root.heart_rate
+                units: "bpm"
+            CardValue
+                value: root.cadence
+                units: "rpm"
+            CardValue
+                font_size: 14
+                size_hint: (1., 0.15)
+                value: root.speed
+                units: "kmh"
+            CardValue
+                font_size: 14
+                size_hint: (1., 0.15)
+                value: root.time
+                units: "time"
+            CardValue:
+                font_size: 14
+                size_hint: (1., 0.15)
+                value: root.distance
+                units: "km"
+
+
+FloatLayout:
+
+    content: content
+
+    StackLayout:
+
+        id: content
+
+        spacing: 10
+        orientation: 'lr-tb'
