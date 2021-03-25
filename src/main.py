@@ -166,15 +166,16 @@ class PlayerManager:
                        req_headers={'Content-Type': 'application/json'},  req_body=json.dumps({"id": player_id}))
 
     def _update_player(self, update):
-        player = self.players[update['id']]
-        player.update(update)
+        player = self.players.get(update['id'], None)
+        if player:
+            player.update(update)
 
     def _update_handler(self, req, result):
         for update in result['data']:
             self._update_player(update)
 
     def update_players(self, *args):
-        UrlRequest('http://127.0.0.1:3030/watch', self._update_handler)
+        UrlRequest('http://127.0.0.1:3030/watch?latest=true', self._update_handler)
 
 
 class ZwiftTeamView(App):
