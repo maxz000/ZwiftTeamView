@@ -6,6 +6,7 @@ import shutil
 import json
 import requests
 import threading
+import logging
 from bs4 import BeautifulSoup
 
 from kivy.app import App
@@ -63,27 +64,36 @@ class Player:
         self.reset_clock = Clock.schedule_interval(self.reset, self.RESET_TIMEOUT)
 
     def fetch_profile_from_zp(self):
+        app = App.get_running_app()
         cache_json = os.path.join(CACHE_DIR, f"{self.player_id}.json")
 
         headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0"
+            "User-Agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0",
+            "Cookie": app.user_config.get('zp_cookie', "")
         }
+
         resp = requests.get(f"https://zwiftpower.com/profile.php?z={self.player_id}",
                             headers=headers)
 
+        logging.info(resp.status_code)
         text = resp.text
-        soup = BeautifulSoup(text, "html.parser")
-        self.name = soup.title.text.split("-")[1].strip()
-        img = soup.find('img', class_="img-circle").attrs['src']
-        self.avatar_src = os.path.join(CACHE_DIR, f"{img.split('/')[-1]}.jpeg")
-        if not os.path.exists(self.avatar_src):
-            img_resp = requests.get(img, headers=headers, stream=True)
-            if img_resp.status_code == 200:
-                with open(self.avatar_src, 'wb') as f:
-                    shutil.copyfileobj(img_resp.raw, f)
+        try:
+            soup = BeautifulSoup(text, "html.parser")
+            self.name = soup.title.text.split("-")[1].strip()
+            img = soup.find('img', class_="img-circle").attrs['src']
+            self.avatar_src = os.path.join(CACHE_DIR, f"{img.split('/')[-1]}.jpeg")
+            if not os.path.exists(self.avatar_src):
+                img_resp = requests.get(img, headers=headers, stream=True)
+                if img_resp.status_code == 200:
+                    with open(self.avatar_src, 'wb') as f:
+                        shutil.copyfileobj(img_resp.raw, f)
 
-        with open(cache_json, 'w') as fp:
-            json.dump({"name": self.name, "avatar_src": self.avatar_src}, fp)
+            with open(cache_json, 'w') as fp:
+                json.dump({"name": self.name, "avatar_src": self.avatar_src}, fp)
+        except Exception as ex:
+            logging.exception(ex)
+            with open("error.html", "w") as fp:
+                fp.write(text)
 
         self.widget.name = self.name
         self.widget.avatar_src = self.avatar_src
@@ -150,6 +160,7 @@ class PlayerManager:
         print(*args)
 
     def load_players_config(self):
+        app = App.get_running_app()
 
         if not os.path.exists(CACHE_DIR):
             os.makedirs(CACHE_DIR)
@@ -158,6 +169,8 @@ class PlayerManager:
             config = json.load(fp)
 
         self._config = config
+        app.user_config['zp_cookie'] = config.get("cookie")
+
         for player_id in self._config["users"]:
             player = Player(player_id)
             self.players[player_id] = player
@@ -182,6 +195,12 @@ class ZwiftTeamView(App):
 
     players_manager = PlayerManager()
     update_clock = None
+
+    user_config = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_config = {}
 
     def build(self):
         return Builder.load_file("main.kv")
